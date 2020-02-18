@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
@@ -96,7 +95,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 
 	private RetryTemplate retryTemplate;
 
-	private RecoveryCallback<? extends Object> recoveryCallback;
+	private RecoveryCallback<?> recoveryCallback;
 
 	private boolean statefulRetry;
 
@@ -117,7 +116,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 	private boolean splitIterables = true;
 
 	@Override
-	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+	public void setBeanFactory(BeanFactory beanFactory) {
 		this.beanFactory = beanFactory;
 		if (beanFactory instanceof ConfigurableListableBeanFactory) {
 			this.resolver = ((ConfigurableListableBeanFactory) beanFactory).getBeanExpressionResolver();
@@ -199,7 +198,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 	 */
 	@Deprecated
 	public void setTopicPartitions(org.springframework.kafka.support.TopicPartitionInitialOffset... topicPartitions) {
-		Assert.notNull(topicPartitions, "'topics' must not be null");
+		Assert.notNull(topicPartitions, "'topic partitions' must not be null");
 		this.topicPartitions.clear();
 		Arrays.stream(topicPartitions)
 				.map(org.springframework.kafka.support.TopicPartitionInitialOffset::toTPO)
@@ -216,7 +215,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 	 * @see #setTopicPattern(Pattern)
 	 */
 	public void setTopicPartitions(TopicPartitionOffset... topicPartitions) {
-		Assert.notNull(topicPartitions, "'topics' must not be null");
+		Assert.notNull(topicPartitions, "'topic partitions' must not be null");
 		this.topicPartitions.clear();
 		this.topicPartitions.addAll(Arrays.asList(topicPartitions));
 	}
@@ -340,7 +339,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 	 * Set a callback to be used with the {@link #setRetryTemplate(RetryTemplate)}.
 	 * @param recoveryCallback the callback.
 	 */
-	public void setRecoveryCallback(RecoveryCallback<? extends Object> recoveryCallback) {
+	public void setRecoveryCallback(RecoveryCallback<?> recoveryCallback) {
 		this.recoveryCallback = recoveryCallback;
 	}
 
@@ -489,8 +488,6 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 		}
 		adapter.setSplitIterables(this.splitIterables);
 		Object messageListener = adapter;
-		Assert.state(messageListener != null,
-				() -> "Endpoint [" + this + "] must provide a non null message listener");
 		Assert.state(this.retryTemplate == null || !this.batchListener,
 				"A 'RetryTemplate' is not supported with a batch listener; consider configuring the container "
 				+ "with a suitably configured 'SeekToCurrentBatchErrorHandler' instead");
@@ -500,7 +497,7 @@ public abstract class AbstractKafkaListenerEndpoint<K, V>
 		}
 		if (this.recordFilterStrategy != null) {
 			if (this.batchListener) {
-				if (((MessagingMessageListenerAdapter<K, V>) messageListener).isConsumerRecords()) {
+				if (adapter.isConsumerRecords()) {
 					this.logger.warn(() -> "Filter strategy ignored when consuming 'ConsumerRecords'"
 							+ (this.id != null ? " id: " + this.id : ""));
 				}

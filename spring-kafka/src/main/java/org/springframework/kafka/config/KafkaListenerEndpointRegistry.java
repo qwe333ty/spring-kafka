@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 the original author or authors.
+ * Copyright 2014-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.logging.LogFactory;
 
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -82,7 +81,7 @@ public class KafkaListenerEndpointRegistry implements DisposableBean, SmartLifec
 	private volatile boolean running;
 
 	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+	public void setApplicationContext(ApplicationContext applicationContext) {
 		if (applicationContext instanceof ConfigurableApplicationContext) {
 			this.applicationContext = (ConfigurableApplicationContext) applicationContext;
 		}
@@ -179,7 +178,7 @@ public class KafkaListenerEndpointRegistry implements DisposableBean, SmartLifec
 					containerGroup = this.applicationContext.getBean(endpoint.getGroup(), List.class);
 				}
 				else {
-					containerGroup = new ArrayList<MessageListenerContainer>();
+					containerGroup = new ArrayList<>();
 					this.applicationContext.getBeanFactory().registerSingleton(endpoint.getGroup(), containerGroup);
 				}
 				containerGroup.add(container);
